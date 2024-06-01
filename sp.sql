@@ -31,7 +31,7 @@ begin
 			and (v_task is null or test_task = v_task collate utf8mb4_general_ci)
 			and (v_load is null or test_load = v_load collate utf8mb4_general_ci)
 		group by date_format(start_time, '%Y');
-	else -- by day
+	elseif group_by = 'd' then -- day
 		select date_format(start_time, '%Y-%m-%d') as 'date', count(*) as 'count'
 		from collect12
 		where (v_start is null or start_time >= v_start)
@@ -39,6 +39,13 @@ begin
 			and (v_task is null or test_task = v_task collate utf8mb4_general_ci)
 			and (v_load is null or test_load = v_load collate utf8mb4_general_ci)
 		group by date_format(start_time, '%Y-%m-%d');
+	else -- Other. Can be week.
+		select 'Total' as 'date', count(*) as 'count'
+		from collect12
+		where (v_start is null or start_time >= v_start)
+			and (v_end is null or start_time < v_end)
+			and (v_task is null or test_task = v_task collate utf8mb4_general_ci)
+			and (v_load is null or test_load = v_load collate utf8mb4_general_ci);
 	end if;
 end;
 
