@@ -3,7 +3,7 @@ delimiter //
 create or replace view collect10 as
 select c1.form_no as 'report_no'
 	, c1.data_value as 'form_number' -- 表单编号
-    , c1.create_time
+	, c1.create_time
 	, c2.data_value as 'task' -- 任务代号
 	, c3.data_value as 'load' -- 载荷名称
 	, c4.data_value as 'test' -- 实验名称
@@ -12,8 +12,8 @@ select c1.form_no as 'report_no'
 	, c7.data_value as 'maturity' -- 成熟程度
 	, c8.data_value as 'type' -- 实验方式
 	, s1.data_value as 'moon_event_id' -- 月事件id
-	, substring(s2.data_value, 2, 19) as 'start' -- 开始时间
-	, substring(s2.data_value, 23, 19) as 'end' -- 结束时间
+	, cast(substring(s2.data_value, 2, 19) as datetime) as 'start_time' -- 开始时间
+	, cast(substring(s2.data_value, 23, 19) as datetime) as 'end_time' -- 结束时间
 	, round(timestampdiff(minute, substring(s2.data_value, 2, 19), substring(s2.data_value, 23, 19))/60, 2) as 'elapse' -- 实验时长
 	, s3.data_value as 'power' -- 实验功耗
 	, s4.data_value as 'resource' -- 上行资源需求
@@ -54,13 +54,15 @@ where c1.form_no = 10
 create or replace view collect12 as
 select c1.form_no as 'report_no'
 	, c1.data_value as 'form_number' -- 表单编号
-    , c1.create_time
+	, c1.create_time
 	, c2.data_value as 'task' -- 任务代号
 	, c3.data_value as 'load' -- 载荷名称
 	, s1.data_value as 'test_task' -- 实验任务代号
 	, s2.data_value as 'test_load' -- 实验载荷名称
 	, s3.data_value as 'test_name' -- 实验名称
-	, s4.data_value as 'start_end' -- 开始时间-结束时间
+	, cast(substring(replace(s4.data_value, '_', ' '), 1, 19) as datetime) as 'start_time' -- 开始时间
+	, cast(substring(replace(s4.data_value, '_', ' '), 25, 19) as datetime) as 'end_time' -- 结束时间
+	, round(timestampdiff(minute, substring(replace(s4.data_value, '_', ' '), 1, 19), substring(replace(s4.data_value, '_', ' '), 25, 19))/60, 2) as 'elapse' -- 实验时长
 	, s5.data_value as 'person_hour' -- 航天员人时
 	, s6.data_value as 'fly_event_id' -- 飞控事件id
 	, s7.data_value as 'moon_event_id' -- 月事件id
