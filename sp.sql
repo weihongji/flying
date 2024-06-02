@@ -40,7 +40,9 @@ begin
 			and (v_load is null or test_load = v_load collate utf8mb4_general_ci)
 		group by date_format(start_time, '%Y-%m-%d');
 	elseif group_by = 'w' then -- week
-		select year(start_time) as 'year', weekofyear(start_time) as 'week', count(*) as 'count'
+		select year(start_time) as 'year', weekofyear(start_time) as 'week'
+			, date_add(min(start_time), interval -weekday(min(start_time)) day) as 'date' -- Monday of the week
+			, count(*) as 'count'
 		from collect12
 		where (v_start is null or start_time >= v_start)
 			and (v_end is null or start_time < v_end)
@@ -49,7 +51,7 @@ begin
 		group by year(start_time), weekofyear(start_time)
 		order by 1, 2;
 	else -- total of all
-		select count(*) as 'count'
+		select min(start_time) as 'date', count(*) as 'count'
 		from collect12
 		where (v_start is null or start_time >= v_start)
 			and (v_end is null or start_time < v_end)
