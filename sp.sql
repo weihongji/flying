@@ -41,7 +41,7 @@ begin
 		group by date_format(start_time, '%Y-%m-%d');
 	elseif group_by = 'w' then -- week
 		select year(start_time) as 'year', weekofyear(start_time) as 'week'
-			, date_add(min(start_time), interval -weekday(min(start_time)) day) as 'date' -- Monday of the week
+			, date(date_add(min(start_time), interval -weekday(min(start_time)) day)) as 'date' -- Monday of the week
 			, count(*) as 'count'
 		from collect12
 		where (v_start is null or start_time >= v_start)
