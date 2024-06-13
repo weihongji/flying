@@ -43,7 +43,6 @@ begin
 		select year(start_time) as 'year', weekofyear(start_time) as 'week'
 			, date_format(date_add(min(start_time), interval -weekday(min(start_time)) day), '%Y-%m-%d') as 'date' -- Monday of the week
 			, count(*) as 'count'
-			, count(distinct moon_event_id) as 'count_moon_event'
 		from collect12
 		where (v_start is null or start_time >= v_start)
 			and (v_end is null or start_time < v_end)
