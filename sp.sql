@@ -74,5 +74,71 @@ begin
 	end if;
 end;
 
+-- 为性能测试生成数据, 数据放在表collect_mock
+drop procedure if exists mock;
+
+create procedure mock(copies int)
+begin
+	declare days int default 5 * 365;
+	declare end_date date default current_date() - 1;
+	declare count_per_day int default 1;
+	declare v_date date;
+	declare i int default 1; -- counter from 1 to number of copies
+	declare day_i int;
+	declare max_id bigint;
+	
+	if copies > days then
+		set count_per_day = copies / days;
+	end if;
+
+	set v_date = date_sub(end_date, interval days day);
+	
+	create temporary table if not exists instance (
+		instance_id varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+		new_id varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+	);
+	insert into instance (instance_id, new_id)
+	select distinct instance_id, '' from flying_form_collect;
+
+	truncate table collect_mock;
+
+	while v_date <= end_date and i <= copies do
+		set day_i = 1;
+		while day_i <= count_per_day and i <= copies do
+			update instance set new_id = uuid();
+			select ifnull(max(id), 10000000000) into max_id from collect_mock;
+			
+			insert into collect_mock (id, instance_id, create_time, group_id, form_no, data_key, data_value, is_summary_data, row_no, status, create_by)
+			select max_id + row_number() over (order by id) as id
+				, s.new_id as instance_id
+				, timestamp(v_date, sec_to_time(floor(day_i/count_per_day * (4 * 3600)))) as create_time
+				, group_id
+				, form_no
+				, data_key
+				, case when data_key in ('开始时间', '发生时间', '飞控事件开始时间') then
+						timestamp(v_date, maketime(6 + floor(rand() * 6), 0, 0)) -- 6:00 ~ 12:00
+					when data_key in ('飞控事件结束时间') then
+						timestamp(v_date, maketime(12 + floor(rand() * 6), 0, 0)) -- 12:00 ~ 18:00
+					when data_key = '表单编号' then
+						regexp_replace(data_value, '-[0-9]{8,8}-[0-9]+', concat('-', date_format(v_date, '%Y%m%d'), '-', day_i))
+					when data_key in ('开始时间-结束时间', '操作开始时间-操作结束时间') then -- [2024-06-26 00:00:00, 2024-06-27 00:00:00]
+						concat('['
+							, date_format(timestamp(v_date, maketime(6 + floor(rand() * 6), 0, 0)), '%Y-%m-%d %H:%i:%s')
+							, ', '
+							, date_format(timestamp(v_date, maketime(12 + floor(rand() * 6), 0, 0)), '%Y-%m-%d %H:%i:%s')
+							, ']')
+					else data_value
+				end as data_value
+				, is_summary_data, row_no, status, create_by
+			from flying_form_collect c inner join instance s on s.instance_id = c.instance_id;
+			
+			set day_i = day_i + 1;
+			set i = i + 1;
+		end while;
+		set v_date = date_add(v_date, interval 1 day);
+	end while;
+	
+	drop temporary table instance;
+end;
 //
 delimiter ;
