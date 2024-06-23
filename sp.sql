@@ -79,8 +79,9 @@ drop procedure if exists mock;
 
 create procedure mock(copies int)
 begin
-	declare days int default 5 * 365;
-	declare end_date date default current_date() - 1;
+	declare start_date date default '2024-01-01';
+	declare end_date date default current_date(); -- Not included
+	declare days int default datediff(end_date, start_date);
 	declare count_per_day int default 1;
 	declare v_date date;
 	declare i int default 1; -- counter from 1 to number of copies
@@ -90,8 +91,6 @@ begin
 	if copies > days then
 		set count_per_day = copies / days;
 	end if;
-
-	set v_date = date_sub(end_date, interval days day);
 	
 	create temporary table if not exists instance (
 		instance_id varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
@@ -102,7 +101,8 @@ begin
 
 	truncate table collect_mock;
 
-	while v_date <= end_date and i <= copies do
+	set v_date = start_date;
+	while v_date < end_date and i <= copies do
 		set day_i = 1;
 		while day_i <= count_per_day and i <= copies do
 			update instance set new_id = uuid();
@@ -138,6 +138,7 @@ begin
 		set v_date = date_add(v_date, interval 1 day);
 	end while;
 	
+	select count(*) as 'count' from collect_mock;
 	drop temporary table instance;
 end;
 //
